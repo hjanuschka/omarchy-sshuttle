@@ -4,6 +4,14 @@
 
 An Omarchy bar widget for controlling an [sshuttle](https://sshuttle.readthedocs.io/) tunnel. Click the bar icon to see the connection status, edit the SSH host and username, add/remove routed CIDR subnets, start/stop the tunnel, and view the log.
 
+## Preview
+
+These are illustrative UI mockups, not captures of a real connection. All addresses and the username are examples.
+
+| Stopped | Running |
+| --- | --- |
+| ![Mock panel: stopped tunnel, example host and subnets](assets/panel-stopped.png) | ![Mock panel: active tunnel, example host and subnets](assets/panel-running.png) |
+
 ## Install
 
 Install sshuttle and Python 3 first, then add the plugin:
