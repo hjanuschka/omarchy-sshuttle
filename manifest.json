@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "id": "sshuttle.tunnel",
+  "name": "sshuttle",
+  "version": "1.0.0",
+  "author": "Omarchy sshuttle",
+  "description": "Configure and control sshuttle tunnels from the bar",
+  "kinds": [
+    "bar-widget"
+  ],
+  "entryPoints": {
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "sshuttle",
+    "description": "Configure and toggle an sshuttle tunnel",
+    "category": "Info",
+    "allowMultiple": false
+  }
+}

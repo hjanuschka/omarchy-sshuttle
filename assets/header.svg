@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" role="img" aria-labelledby="title desc">
+  <title id="title">Omarchy sshuttle</title>
+  <desc id="desc">A glowing tunnel connects a laptop to a remote network, with a status panel showing an active connection.</desc>
+  <defs>
+    <linearGradient id="bg" x2="1" y2="1">
+      <stop stop-color="#101624"/>
+      <stop offset="1" stop-color="#16112a"/>
+    </linearGradient>
+    <linearGradient id="line" x2="1">
+      <stop stop-color="#57d3b2"/>
+      <stop offset="1" stop-color="#9c87fb"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="12"/></filter>
+    <pattern id="grid" width="32" height="32" patternUnits="userSpaceOnUse">
+      <path d="M32 0H0V32" fill="none" stroke="#8d9ac2" stroke-opacity=".07"/>
+    </pattern>
+  </defs>
+  <rect width="1200" height="320" rx="24" fill="url(#bg)"/>
+  <rect width="1200" height="320" rx="24" fill="url(#grid)"/>
+  <circle cx="1000" cy="90" r="170" fill="#6856c0" opacity=".10" filter="url(#glow)"/>
+  <text x="64" y="118" fill="#f1f3ff" font-family="sans-serif" font-size="49" font-weight="700" letter-spacing="-2">omarchy <tspan fill="#62d6bd">sshuttle</tspan></text>
+  <text x="67" y="156" fill="#aab4d2" font-family="sans-serif" font-size="19">Your remote network, one click away.</text>
+  <rect x="65" y="195" width="212" height="43" rx="21" fill="#62d6bd" fill-opacity=".12" stroke="#62d6bd" stroke-opacity=".5"/>
+  <circle cx="89" cy="216" r="6" fill="#62d6bd"/>
+  <text x="108" y="223" fill="#c9f8e9" font-family="sans-serif" font-size="17" font-weight="600">TUNNEL ACTIVE</text>
+  <path d="M698 174 C766 174 755 82 832 82 S902 205 975 205" fill="none" stroke="url(#line)" stroke-width="24" opacity=".22" filter="url(#glow)"/>
+  <path d="M698 174 C766 174 755 82 832 82 S902 205 975 205" fill="none" stroke="url(#line)" stroke-width="4" stroke-linecap="round" stroke-dasharray="2 12"/>
+  <rect x="556" y="129" width="142" height="90" rx="12" fill="#273149" stroke="#60728c" stroke-width="2"/>
+  <path d="M548 225h158l-12 11H560z" fill="#60728c"/>
+  <circle cx="626" cy="174" r="18" fill="#62d6bd" opacity=".14"/>
+  <path d="M620 174l5 5 9-11" fill="none" stroke="#62d6bd" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <rect x="982" y="103" width="140" height="48" rx="10" fill="#273149" stroke="#8f80d3" stroke-width="2"/>
+  <rect x="982" y="174" width="140" height="48" rx="10" fill="#273149" stroke="#8f80d3" stroke-width="2"/>
+  <circle cx="1001" cy="127" r="5" fill="#62d6bd"/>
+  <circle cx="1001" cy="198" r="5" fill="#62d6bd"/>
+  <path d="M1018 127h70M1018 198h70" stroke="#9eadd1" stroke-width="3" stroke-linecap="round"/>
+</svg>

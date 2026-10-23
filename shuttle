@@ -1,0 +1,114 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+REAL_USER="${SUDO_USER:-$(id -un)}"
+REAL_UID="$(id -u "$REAL_USER")"
+USER_HOME="$(getent passwd "$REAL_USER" | cut -d: -f6)"
+CONFIG_DIR="$USER_HOME/.config/omarchy-sshuttle"
+CONF="$CONFIG_DIR/config"
+RUNTIME_DIR="/run/user/$REAL_UID"
+[ -d "$RUNTIME_DIR" ] || RUNTIME_DIR="${TMPDIR:-/tmp}"
+PIDFILE="$RUNTIME_DIR/omarchy-sshuttle.pid"
+LOGFILE="$RUNTIME_DIR/omarchy-sshuttle.log"
+SSHUTTLE="$(command -v sshuttle || true)"
+[ -n "$SSHUTTLE" ] || SSHUTTLE="$USER_HOME/.local/bin/sshuttle"
+
+mkdir -p "$CONFIG_DIR"
+if [ "$(id -u)" -eq 0 ]; then chown "$REAL_USER" "$CONFIG_DIR"; fi
+if [ ! -e "$CONF" ]; then
+  (umask 077; printf 'host=\nuser=\n' >"$CONF")
+  if [ "$(id -u)" -eq 0 ]; then chown "$REAL_USER" "$CONF"; fi
+fi
+
+conf_get() { sed -n "s/^$1=//p" "$CONF"; }
+valid_host() { [[ "$1" =~ ^[a-zA-Z0-9][a-zA-Z0-9.-]*$ ]] && [[ "$1" != -* ]]; }
+valid_user() { [[ "$1" =~ ^[a-zA-Z_][a-zA-Z0-9_.-]*$ ]]; }
+valid_cidr() {
+  python3 - "$1" <<'PY'
+import ipaddress, sys
+try:
+    ipaddress.ip_network(sys.argv[1], strict=False)
+except ValueError:
+    sys.exit(1)
+PY
+}
+
+is_running() {
+  [ -f "$PIDFILE" ] || return 1
+  local pid
+  pid="$(cat "$PIDFILE" 2>/dev/null)"
+  [[ "$pid" =~ ^[0-9]+$ ]] && [ -d "/proc/$pid" ] &&
+    tr '\0' ' ' <"/proc/$pid/cmdline" | grep -q 'sshuttle.*-r '
+}
+
+case "${1:-status}" in
+  config) cat "$CONF" ;;
+  set)
+    key="${2:-}"; val="${3:-}"
+    case "$key" in
+      host) valid_host "$val" || { echo 'invalid host' >&2; exit 1; } ;;
+      user) valid_user "$val" || { echo 'invalid user' >&2; exit 1; } ;;
+      *) echo 'usage: shuttle set host|user VALUE' >&2; exit 1 ;;
+    esac
+    tmp="$(mktemp "$CONFIG_DIR/.config.XXXXXX")"
+    grep -v "^$key=" "$CONF" >"$tmp" || true
+    printf '%s=%s\n' "$key" "$val" >>"$tmp"
+    chmod 600 "$tmp"
+    mv "$tmp" "$CONF"
+    ;;
+  subnet)
+    action="${2:-}"; cidr="${3:-}"
+    case "$action" in
+      list) conf_get subnet ;;
+      add)
+        valid_cidr "$cidr" || { echo 'invalid subnet' >&2; exit 1; }
+        grep -qxF "subnet=$cidr" "$CONF" || printf 'subnet=%s\n' "$cidr" >>"$CONF"
+        ;;
+      del)
+        valid_cidr "$cidr" || { echo 'invalid subnet' >&2; exit 1; }
+        tmp="$(mktemp "$CONFIG_DIR/.config.XXXXXX")"
+        grep -vxF "subnet=$cidr" "$CONF" >"$tmp" || true
+        chmod 600 "$tmp"
+        mv "$tmp" "$CONF"
+        ;;
+      *) echo 'usage: shuttle subnet list|add CIDR|del CIDR' >&2; exit 1 ;;
+    esac
+    ;;
+  status)
+    if is_running; then echo "running (pid $(cat "$PIDFILE"))"; else echo 'not running'; fi
+    ;;
+  logs) tail -n 40 "$LOGFILE" 2>/dev/null || echo 'no log yet' ;;
+  start)
+    if is_running; then echo 'already running'; exit 0; fi
+    host="$(conf_get host | tail -1)"; user="$(conf_get user | tail -1)"
+    mapfile -t subnets < <(conf_get subnet)
+    valid_host "$host" && valid_user "$user" && [ "${#subnets[@]}" -gt 0 ] || {
+      echo 'configure host, user and at least one subnet first' >&2; exit 1;
+    }
+    for subnet in "${subnets[@]}"; do valid_cidr "$subnet" || exit 1; done
+    [ -x "$SSHUTTLE" ] || { echo 'install sshuttle first' >&2; exit 1; }
+    export SSH_AUTH_SOCK="${SSH_AUTH_SOCK:-/run/user/$REAL_UID/ssh-agent.socket}"
+    ssh_cmd="ssh -o BatchMode=yes -o ServerAliveInterval=30 -o UserKnownHostsFile=$USER_HOME/.ssh/known_hosts"
+    if [ "$(id -u)" -eq 0 ]; then
+      runner=()
+    else
+      runner=(sudo)
+    fi
+    nohup "${runner[@]}" "$SSHUTTLE" -v --user "$REAL_USER" --ssh-cmd="$ssh_cmd" \
+      -r "$user@$host" "${subnets[@]}" >>"$LOGFILE" 2>&1 &
+    echo "$!" >"$PIDFILE"
+    sleep 2
+    if is_running; then echo "running (pid $(cat "$PIDFILE"))"; else
+      tail -n 8 "$LOGFILE" >&2; exit 1
+    fi
+    ;;
+  stop)
+    if is_running; then
+      if [ "$(id -u)" -eq 0 ]; then kill "$(cat "$PIDFILE")";
+      else sudo kill "$(cat "$PIDFILE")"; fi
+    fi
+    rm -f "$PIDFILE"
+    echo 'not running'
+    ;;
+  *) echo 'usage: shuttle start|stop|status|logs|config|set host|user VALUE|subnet list|add|del CIDR' >&2; exit 1 ;;
+esac
